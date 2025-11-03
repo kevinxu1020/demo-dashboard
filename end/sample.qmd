@@ -1,7 +1,11 @@
 ---
 title: Recent Earthquakes in Aotearoa New Zealand
+format: 
+  dashboard:
+    orientation: columns
+    theme: yeti
+server: shiny
 # Original author: Charlotte Wickham
-format: dashboard
 ---
 
 ```{r}
@@ -84,6 +88,7 @@ timeline <- recent_quakes |>
   geom_point()
 ```
 
+
 ```{r}
 #| label: "Recent quakes table"
 n <- 10
@@ -120,4 +125,57 @@ top_n_table <- top_n |>
     source_note = md(paste("Retrieved from the [GeoNet API](https://api.geonet.org.nz/) at", format(now_nz, "%Y/%m/%d %H:%M %Z")))
   )
 ```
+
+
+# Dashboard
+
+## Column
+
+### Row 
+
+```{r}
+#| component: valuebox
+#| title: Hours since last earthquake
+list(
+  icon = "stopwatch",
+  color = "primary",
+  value = as.numeric(hours_last)
+)
+```
+
+```{r}
+#| component: valuebox
+#| title: Earthquakes in the last 24 hours
+list(
+  icon = "activity",
+  color = "secondary",
+  value = n_24
+)
+```
+
+### Row
+
+```{r}
+#| label: Show table
+top_n_table
+```
+
+
+## Column
+
+```{r}
+#| lable: Show map
+quake_map
+```
+
+
+# About
+
+The original author of this dashboard is Charlotte Wickham.
+
+The data on earthquakes is drawn from the GeoNet API:
+
+<https://api.geonet.org.nz/>
+
+All earthquakes below MMI 3.0 have been filtered out.
 
