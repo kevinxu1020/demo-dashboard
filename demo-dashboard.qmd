@@ -1,72 +1,83 @@
---- 
-title: "Development Indicators by Continent"
-author: "Gapminder Analytics Group"
+---
+title: "Diamonds Explorer"
+author: "Barkamian Analytics"
 format: dashboard
---- 
+server: shiny
+---
 
 ```{r}
-# Global setup
-library(tidyverse)
-library(gapminder)
-library(scales)
-
-df <- gapminder
-latest_year <- max(df$year)
+#| context: setup
+library(ggplot2)
+dataset <- diamonds
 ```
 
-## Row {height=60%}
+# {.sidebar}
 
 ```{r}
-#| title: GDP and Life Expectancy 
-df |>
-filter(year == latest_year) |>
-ggplot(aes(x = gdpPercap, y = lifeExp,
-size = pop, color = continent)) +
-geom_point(alpha = 0.7) +
-facet_wrap(~ continent) +
-scale_x_log10(labels = label_comma(),
-limits = c(100, 100000)) +
-scale_y_continuous(limits = c(25, 90)) +
-scale_size_continuous(range = c(1, 15), guide = "none") +
-labs(x = "GDP per capita (log scale)",
-y = "Life expectancy (years)",
-color = "Continent",
-title = paste("GDP vs Life Expectancy —", latest_year)) +
-theme_minimal(base_size = 13) +
-theme(legend.position = "bottom",
-plot.title = element_text(face = "bold"))
-```
-
-## Row {height=40%}
-
-```{r}
-#| title: Population
-pop_by_cont <- df |>
-group_by(year, continent) |>
-summarise(pop = sum(pop), .groups = "drop")
-
-ggplot(pop_by_cont, aes(x = year, y = pop, fill = continent)) +
-geom_area() +
-scale_y_continuous(
-labels = label_number(scale_cut = cut_short_scale())
-) +
-labs(x = NULL, y = "Population",
-fill = "Continent",
-title = "Population by Continent Over Time") +
-theme_minimal(base_size = 13) +
-theme(legend.position = "bottom",
-plot.title = element_text(face = "bold"))
+sliderInput('sampleSize', 'Sample Size', 
+            min=1, max=nrow(dataset),
+            value=min(1000, nrow(dataset)), 
+            step=500, round=0)
+br()
+checkboxInput('jitter', 'Jitter')
+checkboxInput('smooth', 'Smooth')
 ```
 
 ```{r}
-#| title: Life Expectancy
-ggplot(df, aes(x = year, y = lifeExp,
-group = country, color = continent)) +
-geom_line(alpha = 0.35) +
-labs(x = NULL, y = "Life expectancy (years)",
-color = "Continent",
-title = "Life Expectancy Trends by Country") +
-theme_minimal(base_size = 13) +
-theme(legend.position = "bottom",
-plot.title = element_text(face = "bold"))
+selectInput('x', 'X', names(dataset)) 
+selectInput('y', 'Y', names(dataset), names(dataset)[[2]])
+selectInput('color', 'Color', c('None', names(dataset)))
+```
+
+```{r}
+selectInput('facet_row', 'Facet Row',
+  c(None='.', names(diamonds[sapply(diamonds, is.factor)])))
+selectInput('facet_col', 'Facet Column',
+  c(None='.', names(diamonds[sapply(diamonds, is.factor)])))
+```
+
+# Plot
+
+```{r}
+plotOutput('plot')
+```
+
+# Data
+
+```{r}
+tableOutput('data')
+```
+
+```{r}
+#| context: server
+
+dataset <- reactive({
+  diamonds[sample(nrow(diamonds), input$sampleSize),]
+})
+ 
+output$plot <- renderPlot({
+  
+  p <- ggplot(
+    dataset(), 
+    aes_string(x=input$x, y=input$y)) + geom_point()
+  
+  if (input$color != 'None')
+    p <- p + aes_string(color=input$color)
+  
+  facets <- paste(input$facet_row, '~', input$facet_col)
+  if (facets != '. ~ .')
+    p <- p + facet_grid(facets)
+  
+  if (input$jitter)
+    p <- p + geom_jitter()
+  if (input$smooth)
+    p <- p + geom_smooth()
+  
+  p
+  
+})
+
+output$data <- renderTable({
+  dataset()
+})
 ```
