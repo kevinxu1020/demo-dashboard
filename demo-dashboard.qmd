@@ -1,0 +1,72 @@
+--- 
+title: "Development Indicators by Continent"
+author: "Gapminder Analytics Group"
+format: dashboard
+--- 
+
+```{r}
+# Global setup
+library(tidyverse)
+library(gapminder)
+library(scales)
+
+df <- gapminder
+latest_year <- max(df$year)
+```
+
+## Row {height=60%}
+
+```{r}
+#| title: GDP and Life Expectancy 
+df |>
+filter(year == latest_year) |>
+ggplot(aes(x = gdpPercap, y = lifeExp,
+size = pop, color = continent)) +
+geom_point(alpha = 0.7) +
+facet_wrap(~ continent) +
+scale_x_log10(labels = label_comma(),
+limits = c(100, 100000)) +
+scale_y_continuous(limits = c(25, 90)) +
+scale_size_continuous(range = c(1, 15), guide = "none") +
+labs(x = "GDP per capita (log scale)",
+y = "Life expectancy (years)",
+color = "Continent",
+title = paste("GDP vs Life Expectancy —", latest_year)) +
+theme_minimal(base_size = 13) +
+theme(legend.position = "bottom",
+plot.title = element_text(face = "bold"))
+```
+
+## Row {height=40%}
+
+```{r}
+#| title: Population
+pop_by_cont <- df |>
+group_by(year, continent) |>
+summarise(pop = sum(pop), .groups = "drop")
+
+ggplot(pop_by_cont, aes(x = year, y = pop, fill = continent)) +
+geom_area() +
+scale_y_continuous(
+labels = label_number(scale_cut = cut_short_scale())
+) +
+labs(x = NULL, y = "Population",
+fill = "Continent",
+title = "Population by Continent Over Time") +
+theme_minimal(base_size = 13) +
+theme(legend.position = "bottom",
+plot.title = element_text(face = "bold"))
+```
+
+```{r}
+#| title: Life Expectancy
+ggplot(df, aes(x = year, y = lifeExp,
+group = country, color = continent)) +
+geom_line(alpha = 0.35) +
+labs(x = NULL, y = "Life expectancy (years)",
+color = "Continent",
+title = "Life Expectancy Trends by Country") +
+theme_minimal(base_size = 13) +
+theme(legend.position = "bottom",
+plot.title = element_text(face = "bold"))
+```
